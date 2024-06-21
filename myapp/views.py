@@ -1,11 +1,32 @@
+import json
 # myapp/views.py
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 # from django.http import HttpResponse
-from rest_framework import status
-from .serializers import HelloSerializer, MessageSerializer
-from .models import Message
+from rest_framework import status, viewsets
+from .serializers import MessageSerializer, ImageUploadSerializer, UserSerializer, ItemSerializer
+from .models import Message, Item
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
+from django.db import connection
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template import loader
+from myapp.models import Item
+
+# JWT
+import jwt 
+SECRET_KEY = "secretkey"
+current_user = ""
 
 @api_view(['GET'])
 def hello_django(request):
@@ -38,3 +59,117 @@ def hello_delete(request, pk):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+def validate_image_format(image):
+    valid_mime_types = ['image/jpeg', 'image/png', 'image/jpg']
+    if image.content_type not in valid_mime_types:
+        raise ValidationError("incorrect format")
+
+@api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+def upload_image(request):
+    auth_token = str(request.META["HTTP_AUTHORIZATION"]).split()[1] # token
+    print(auth_token)
+    decoded = jwt.decode(auth_token.strip(), SECRET_KEY, algorithms=["HS256"])
+    print(decoded)
+    # print(f"USER: {current_user}")
+    if str(decoded) != "{'user': 'testuser16'}":
+        return Response({"error": "invalid authentication token"}, status=status.HTTP_400_BAD_REQUEST)
+    if 'image' not in request.FILES:
+        return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+    image = request.FILES['image']
+
+    try:
+        validate_image_format(image)
+    except ValidationError as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = ImageUploadSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register(request):
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        global current_user 
+        current_user += str(user)
+        # print("USer data", user)
+        jwt_token = jwt.encode({"user": str(user)}, SECRET_KEY, algorithm="HS256")
+        return Response({'token': jwt_token}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CustomAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token})
+    
+
+
+@permission_classes([AllowAny])
+@api_view(['GET'])
+def get_item(request):
+    items = Item.objects.all()
+    
+
+    list_items = [[item.name, item.description] for item in items]   
+    serializer = ItemSerializer(items, many=True)
+    return render(request, 'show_item.html', {'item': serializer.data})
+
+@api_view(['POST'])
+def post_item(request):
+    serializer = ItemSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_item(request, pk):
+    try:
+        item = Item.objects.get(pk=pk)
+    except Item.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    item.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def update_item(request, pk):
+    try:
+        
+        data = json.loads(request.body)
+        name = data.get('name')
+        description = data.get('description')
+        if not name or not description:
+            return Response({'error': 'Invalid input'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE myapp_item SET name = %s, description = %s WHERE id = %s",
+                [name, description, pk]
+            )
+        
+        # print(item)
+        # serializer = ItemSerializer(data=item)
+        # if serializer.is_valid():
+        #     print("A")
+        #     print(serializer.data)
+        #     serializer.data = request.data
+        #     print(serializer.data)
+        #     serializer.save()
+
+        return Response({'default' : 'default'})
+    except Item.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    

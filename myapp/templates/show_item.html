@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Show Items</title>
+</head>
+<body>
+    <h1>Show Items</h1>
+    <ul>
+        {% for each in item %}
+        <li>{{ each.id }} - {{ each.name }} - {{ each.description }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
