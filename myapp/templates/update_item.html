@@ -7,6 +7,21 @@
 <body>
     <h1>Update Item</h1>
     <form method="post" action="/api/item/update/{{ pk }}/">
+        <label for="index">Index: </label>
+        <input type="text" id="index" name="name" value="{{ pk }}">
+        <script>
+            document.getElementById('index').addEventListener('change', function() {
+                var originalPk = "{{ pk }}";
+                var newPk = this.value.trim();
+    
+                if (newPk !== originalPk) {
+                    if (confirm('The index has changed. Do you want to navigate to the new page?')) {
+                        window.location.href = '/api/item/update/' + newPk + '/';
+                    }
+                }
+            });
+        </script>
+        <br>
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" value="{{ item.name }}">
         <br>
@@ -15,5 +30,7 @@
         <br>
         <button type="submit">Update</button>
     </form>
+    <br><br>
+    <a href="/api/item/home"><Button>Home</Button></a>
 </body>
 </html>

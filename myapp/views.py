@@ -2,7 +2,7 @@ import json
 # myapp/views.py
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-# from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework import status, viewsets
 from .serializers import MessageSerializer, ImageUploadSerializer, UserSerializer, ItemSerializer
 from .models import Message, Item
@@ -22,6 +22,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
 from myapp.models import Item
+from django.views.decorators.csrf import csrf_exempt
 
 # JWT
 import jwt 
@@ -92,7 +93,7 @@ def upload_image(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+# @permission_classes([AllowAny])
 def register(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
@@ -114,7 +115,7 @@ class CustomAuthToken(ObtainAuthToken):
     
 
 
-@permission_classes([AllowAny])
+# @permission_classes([AllowAny])
 @api_view(['GET'])
 def get_item(request):
     items = Item.objects.all()
@@ -142,34 +143,62 @@ def delete_item(request, pk):
     item.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+# @permission_classes([AllowAny])
 
-@api_view(['POST'])
+@api_view(['POST', 'GET'])
+@csrf_exempt
 def update_item(request, pk):
+    item = get_object_or_404(Item, pk=pk)
+    
+    if request.method == 'GET':
+        return render(request, 'update_item.html', {'item': item, 'pk': pk})
+    
+    if request.method == 'POST':
+        try:
+            body = request.body.decode('utf-8')
+            data = json.loads(body)
+            name = data.get('name')
+            description = data.get('description')
+
+            if not name or not description:
+                return JsonResponse({'error': 'Invalid input'}, status=400)
+
+            item.name = name
+            item.description = description
+            item.save()
+
+            return JsonResponse({'message': 'Item updated successfully'}, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Only GET and PUT methods allowed'}, status=405)
+    
+
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+def home(request):
     try:
+        items = Item.objects.all()
+        count = items.count()
         
-        data = json.loads(request.body)
-        name = data.get('name')
-        description = data.get('description')
-        if not name or not description:
-            return Response({'error': 'Invalid input'}, status=status.HTTP_400_BAD_REQUEST)
+    except:
+        return JsonResponse({'error': 'Could not access DB'}, status=400)
 
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE myapp_item SET name = %s, description = %s WHERE id = %s",
-                [name, description, pk]
-            )
-        
-        # print(item)
-        # serializer = ItemSerializer(data=item)
-        # if serializer.is_valid():
-        #     print("A")
-        #     print(serializer.data)
-        #     serializer.data = request.data
-        #     print(serializer.data)
-        #     serializer.save()
+    return render(request, 'home_page.html', {'count':count})
 
-        return Response({'default' : 'default'})
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+def delete_last(request):
+    try:
+        items = Item.objects.all()
+        item  = items.get(pk=items.count())
     except Item.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-    
+    item.delete()
+    count = items.count()
+    return render(request, 'home_page.html', {'count': count})

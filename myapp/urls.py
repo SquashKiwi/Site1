@@ -1,7 +1,7 @@
 # myapp/urls.py
 from django.urls import path
 from .views import hello_django, hello_post, hello_patch, hello_delete, upload_image
-from .views import register, CustomAuthToken, post_item, get_item, update_item, delete_item
+from .views import register, CustomAuthToken, post_item, get_item, update_item, delete_item, home, delete_last
 from rest_framework.routers import DefaultRouter
 
 
@@ -18,5 +18,9 @@ urlpatterns = [
     path('item/save', post_item),
     path('item/delete/<int:pk>/', delete_item),
     path('item/update/<int:pk>/', update_item),
+    path('item/home', home),
+    path('item/delete_last/', delete_last),
+
+
 
 ]
