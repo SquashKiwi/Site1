@@ -27,7 +27,6 @@ from django.views.decorators.csrf import csrf_exempt
 # JWT
 import jwt 
 SECRET_KEY = "secretkey"
-current_user = ""
 
 @api_view(['GET'])
 def hello_django(request):
@@ -195,10 +194,29 @@ def home(request):
 def delete_last(request):
     try:
         items = Item.objects.all()
-        item  = items.get(pk=items.count())
+        item  = items.get(pk=items[items.count()-1].id)
     except Item.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
     item.delete()
     count = items.count()
     return render(request, 'home_page.html', {'count': count})
+
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+def create_random(request):
+    serializer = ItemSerializer(data= {'name':'New name',
+                                       'description' : 'Description',})
+    status = 'Incomplete'
+    if serializer.is_valid():
+        serializer.save()
+        status = 'Complete'
+
+    try:
+        items = Item.objects.all()
+        count = items.count()
+    except Item.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    return JsonResponse({'count' : count , 'status' : status})
+

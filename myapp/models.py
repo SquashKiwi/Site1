@@ -10,7 +10,7 @@ class ImageUpload(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 class Item(models.Model):
-    id = models.BigIntegerField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=100)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

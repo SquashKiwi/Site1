@@ -24,6 +24,7 @@ from rest_framework.routers import DefaultRouter
 urlpatterns = [
     path('polls/', include('polls.urls')),
     path('api/', include('myapp.urls')),
+    path('newApp/', include('newApp.urls')),
     path('admin/', admin.site.urls),
 ]
 
