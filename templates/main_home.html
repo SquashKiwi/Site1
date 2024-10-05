@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body{
+            background-color: rgb(26, 26, 26);
+            color: rgb(227, 227, 227);
+        }
+
+        a{
+            text-decoration: none;
+            color: white;
+        }
+
+        .center{
+            translate: 50% 12%;
+            background-color: rgb(0, 1, 43);
+            outline: auto;
+            box-shadow: 10px;
+            width: 650px;
+            height: 500px;
+            align-content: center;
+            text-align: center;
+            align-items: center;
+            border-radius: 10px;
+            font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+
+        }
+        
+    </style>
+</head>
+<body>
+    <div class='center'>
+        <h1>Hello!</h1>
+        <h3>Welcome to the home page.<br>Pick one of the following paths to continue:</h3>
+        <button type="button" class="btn btn-primary"><a href="/polls/">Polls</a></button>
+        <button type="button" class="btn btn-outline-primary"><a href="/api/hello/">Api</a></button>
+        <button type="button" class="btn btn-outline-primary"><a href="/newApp/">newApp</a></button>
+        <button type="button" class="btn btn-outline-primary"><a href="/admin/">Admin Contol Panel</a></button>
+    </div>
+</body>
+</html>
